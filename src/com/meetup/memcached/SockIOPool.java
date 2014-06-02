@@ -875,33 +875,37 @@ public class SockIOPool {
 	 * @throws IOException */
 	int next_kestrel(String operation){
 		int current = current_kestrel.get(operation);
-		int amount  = current_amount.get(operation);
+		int amount = current_amount.get(operation);
 		int other = current;
 
-		//because the pool has more instances of the same servers, 
-		//all those replicated instances will correpsond to the same load
-		int current_weight=-1;
+		// because the pool has more instances of the same servers,
+		// all those replicated instances will correpsond to the same load
+		int current_weight = -1;
 
-		//get the actual weight
-		for(int i = 0; i<servers.length;i++)
-			if(buckets.get(other).equalsIgnoreCase(servers[i])){
-				current_weight=i;
+		// get the actual weight
+		for (int i = 0; i < servers.length; i++)
+			if (buckets.get(other).equalsIgnoreCase(servers[i])) {
+				current_weight = i;
 				break;
 			}
 
-		//have we used too much this server?
-		if(amount >= weights[current_weight]){
-			//walk through servers until one has another name
-			do{
-				other =(other+1) %buckets.size();
-			}while(buckets.get(other).equalsIgnoreCase(buckets.get(current)));
+		// have we used too much this server?
+		if (amount >= weights[current_weight]) {
+			// Don't need to rotate to another server if there is only one
+			if (new HashSet<String>(buckets).size() > 1) {
+				// Walk through servers until one has another name
+				do {
+					other = (other + 1) % buckets.size();
+				} while (buckets.get(other).equalsIgnoreCase(
+						buckets.get(current)));
+			}
 
-			//reset the new server's load
-			current_kestrel.put(operation, other );
+			// Reset the new server's load
+			current_kestrel.put(operation, other);
 			current_amount.put(operation, 0);
 		}
-			return other;
-		}
+		return other;
+	}
 		/** 
 		 * Returns appropriate SockIO object given
 		 * string cache key and optional hashcode.
